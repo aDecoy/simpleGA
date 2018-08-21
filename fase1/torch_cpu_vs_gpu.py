@@ -1,12 +1,7 @@
-
-#Shows that CPU is better for my work sicne it is a lot faster on smaller networks with small batch size.
-
-
-import gym
-from gym import logger as gym_logger
-import torch.nn as nn
-import torch
 import torch.backends.cudnn as cudnn
+import torch
+import torch.nn as nn
+
 import os
 import numpy as np
 from torch.autograd import Variable
@@ -41,8 +36,8 @@ if torch.cuda.device_count() > 1:
     cudnn.benchmark = True
 elif torch.cuda.is_available() and use_gpu :
     model.cuda()
-    # print(torch.__version__)
-    # print('Using 1 GPU: {}'.format(torch.cuda.get_device_name(0)))
+    print(torch.__version__)
+    print('Using 1 GPU: {}'.format(torch.cuda.get_device_name(0)))
 else:
     print("USE ONLY CPU!")
 

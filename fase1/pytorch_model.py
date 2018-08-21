@@ -90,6 +90,12 @@ print(model.nettverk.state_dict()['0.bias'][0][0].item())
 
 
 
+def load_new_model_state(model,state_dict):
+    model.nettverk.load_state_dict(state_dict)
+    return model
+
+
+
 def save_checkpoint(model, generation, checkpoint_file):
     torch.save({
         'generation': generation + 1,
