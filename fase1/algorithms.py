@@ -1,12 +1,3 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.autograd import Variable
-from torchvision import datasets, transforms
-import time
-import os
-import torch.backends.cudnn as cudnn
-
 from operator import itemgetter
 import numpy as np
 from random import sample, random, gauss
@@ -65,7 +56,7 @@ def get_individual_fitness(model,individual):
 
 def give_fittness(population):
     for individual in population:
-        individual['fitness'] = get_individual_fitness(individual['genes'])
+        individual['fitness'] = get_individual_fitness(individual['genes'],individual['genes'])
 
 
 # population = [{fitness: , genes: , age: }
