@@ -2,13 +2,15 @@ from operator import itemgetter
 import numpy as np
 from random import sample, random, gauss
 from gym_reward import get_reward
+from pytorch_model import get_random_state_dict
+import sys
 
 def mutate_funciton_individ(individ, mutation_rate=0.2):
     standatd_deviation = 2
     genes = individ['genes']  # state_dict for the model
     for key in genes.keys(): #for each layers's weight or bias list
         # for each neuron's weights to the others neurons it is connected to
-        layer_parameters = genes[key].tostring()
+        layer_parameters = genes[key]
         for i, neuron_parameter in enumerate(layer_parameters):
             if isinstance(neuron_parameter,list): #"weights. each neuron have multiple connections"
                 for j, connections_parameter in enumerate(neuron_parameter):
@@ -31,32 +33,31 @@ def mutate_subset(subset, mutate_funciton_individ):
 
 def create_initial_population(population_size, zeros=True):
     def create_genes():
-        return [1.346, 0.234]
+        return get_random_state_dict()
 
     names = np.array(['fitness', 'genes', 'age'])
     initial_population = []
     for i in range(population_size):
         individ = {'fitness': 0, 'genes': create_genes(), 'age': 0}
         initial_population.append(individ)
-
     return initial_population
 
 
-def get_individual_fitness(model,individual):
+def get_individual_fitness(individual):
     '''
     Uses the gym envorment to get a fitness. Only uses direct encodeing from genes.
-    :param model:
     :param individual:
     :return:
     '''
-    fitness=get_reward(model, individual['genes'],render=False)
+    #genes to phenotype, now direct mapping since genes is state dict and we only have one model
+    fitness=get_reward(individual['genes'],render=False)
     individual['fitness']=fitness
     return fitness
 
 
 def give_fittness(population):
     for individual in population:
-        individual['fitness'] = get_individual_fitness(individual['genes'],individual['genes'])
+        individual['fitness'] = get_individual_fitness(individual)
 
 
 # population = [{fitness: , genes: , age: }
@@ -75,8 +76,9 @@ def simpleGA_A(initial_population, population_size, subset_size, mutate_function
         population.sort(key=itemgetter('age'), reverse=True)
         population = population[:-generation_replacment]
         population = population + subset_S[:generation_replacment]
-        print(population)
         # print(subset_S)
+
+    print(population.sort(key=itemgetter('fitness'), reverse=True))
 
 
 if __name__ == '__main__':
