@@ -8,7 +8,8 @@ from pytorch_model import NN_model
 
 #this must be changed if it is to run in pararell
 model= NN_model()
-env = gym.make("Humanoid-v2")
+env = gym.make("Ant-v2")
+# env = gym.make("Humanoid-v2")
 
 def get_reward(state_dict, render=False):
     # cloned_model = copy.deepcopy(model)
