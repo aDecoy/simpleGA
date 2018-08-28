@@ -9,11 +9,11 @@ class NN_model(nn.Module):
         self.nettverk = nn.Sequential(
             nn.Linear(111, 200),
             nn.Tanh(),
-            nn.Linear(200, 300),
+            nn.Linear(200, 150),
             nn.Tanh(),
-            nn.Linear(300, 200),
+            nn.Linear(150, 70),
             nn.Tanh(),
-            nn.Linear(200, num_classes), )
+            nn.Linear(70, num_classes), )
 
     def forward(self, x):
         x = self.nettverk(x)
@@ -37,3 +37,4 @@ class NN_model(nn.Module):
 
 def get_random_state_dict():
     return NN_model().nettverk.state_dict()
+

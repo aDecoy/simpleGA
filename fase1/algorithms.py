@@ -1,11 +1,13 @@
 from operator import itemgetter
 import numpy as np
-from random import sample, random, gauss
-from gym_reward import get_reward
+from random import sample, random, gauss, choices
+from gym_reward import save_checkpoint,load_new_model_state,resume_from_checkpoint,get_reward
 from pytorch_model import get_random_state_dict
 import sys
 from copy import deepcopy
+import pickle
 
+best_individual_file_name='beste_individ.pickle'
 
 def mutate_funciton_individ(individ, mutation_rate=0.1):
     standatd_deviation = 2
@@ -37,7 +39,7 @@ def mutate_subset(subset, mutate_funciton_individ, number_of_individs_to_mutate=
     :return:
     """
     if number_of_individs_to_mutate is None:
-        number_of_individs_to_mutate=len(subset)
+        number_of_individs_to_mutate = len(subset)
     new_mutated_subset = []
     subset.sort(key=itemgetter('fitness'), reverse=True)
     for i in range(number_of_individs_to_mutate):
@@ -58,7 +60,7 @@ def create_initial_population(population_size, zeros=True):
     return initial_population
 
 
-def get_individual_fitness(individual, render=False, number_off_trials=10):
+def get_individual_fitness(individual, number_off_trials=10, render=False, ):
     '''
     Uses the gym envorment to get a fitness. Only uses direct encodeing from genes.
     :param individual:
@@ -74,15 +76,16 @@ def get_individual_fitness(individual, render=False, number_off_trials=10):
     return fitness
 
 
-def give_fittness(population,number_off_trials=10):
+def give_fittness(population, number_off_trials=10):
     for individual in population:
-        individual['fitness'] = get_individual_fitness(individual, number_off_trials)
+        individual['fitness'] = get_individual_fitness(individual, number_off_trials, render=False)
         # print(individual['fitness'])
 
 
 # population = [{fitness: , genes: , age: }
 
-def simpleGA_A(initial_population, population_size, subset_size, mutate_function, number_of_generations, generation_replacment):
+def simpleGA_A(initial_population, population_size, subset_size, mutate_function, number_of_generations,
+               generation_replacment=1, offspring_from_each_indivual=1):
     """
     RegularizedEvolutionforImageClassiﬁerArchitectureSearch
     :param initial_population:
@@ -95,16 +98,17 @@ def simpleGA_A(initial_population, population_size, subset_size, mutate_function
     """
     population = initial_population
     give_fittness(population)
-    highest_fitness_each_generation=[]
+    highest_fitness_each_generation = []
 
     for g in range(number_of_generations):
         print('Generation ' + str(g))
         # subset_S = np.random.choice(initial_population, subset_size)
         # create new samples
         subset_S = sample(population, subset_size)
-        mutated_individuals = mutate_subset(subset_S, mutate_function, generation_replacment)
+        mutated_individuals = mutate_subset(subset_S, mutate_function, generation_replacment,
+                                            offspring_from_each_indivual)
 
-        #Here you are suppose to train mutated_individuals, but we can not really do that for all tasks.
+        # Here you are suppose to train mutated_individuals, but we can not really do that for all tasks.
 
         give_fittness(mutated_individuals)
         # combine samples with population
@@ -120,17 +124,17 @@ def simpleGA_A(initial_population, population_size, subset_size, mutate_function
         for rank, individ in enumerate(population):
             print("rank: {}  Fitness: {}  Age: {} ".format(str(rank), str(individ['fitness']), str(individ['age'])))
             individ['age'] += 1
-        # get_individual_fitness(population[0],render=True)
+            # get_individual_fitness(population[0],render=True)
             highest_fitness_each_generation.append(population[0]['fitness'])
-
 
     print(population.sort(key=itemgetter('fitness'), reverse=True))
 
 
-def simpleGA_B(initial_population, population_size, subset_size, mutate_function, number_of_generations, generation_replacment):
+def simpleGA_B(initial_population, population_size, subset_size, mutate_function, number_of_generations,
+               generation_replacment):
     population = initial_population
     give_fittness(population)
-    highest_fitness_each_generation=[]
+    highest_fitness_each_generation = []
 
     population.sort(key=itemgetter('fitness'), reverse=True)
     for g in range(number_of_generations):
@@ -148,7 +152,8 @@ def simpleGA_B(initial_population, population_size, subset_size, mutate_function
             highest_fitness_each_generation.append(population[0]['fitness'])
 
 
-def simpleGA_C(initial_population, population_size, subset_size, mutate_function, number_of_generations, generation_replacment, number_of_elites=None):
+def simpleGA_C(initial_population, population_size, mutate_function, number_of_generations, subset_size=None,
+               number_of_elites=5, offspring_from_each_indivual=1, number_of_individs_to_mutate=None, number_of_trials=20):
     """
     DeepNeuroevolution: GeneticAlgorithmsareaCompetitiveAlternativefor TrainingDeepNeuralNetworksforReinforcementLearning
 FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley JeffClune
@@ -161,31 +166,54 @@ FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley Jef
     :param number_of_elites:
     :return:
     """
+    if subset_size is None:
+        subset_size = population_size
     population = initial_population
-    give_fittness(population)
-    highest_fitness_each_generation=[]
-    subset_S = sample(population, subset_size)
-    mutated_individuals = mutate_subset(subset_S, mutate_function, number_of_individs_to_mutate=1, offspring_from_each_individ=generation_replacment)
-    give_fittness(mutated_individuals)
+    # if number_of_individs_to_mutate=None
+    #     number_of_individs_to_mutate= population_size
 
+    print('Giving fittnes to initial population')
+    give_fittness(population, number_off_trials=5)
+
+    highest_fitness_each_generation = []
+    subset_S = choices(population, k=subset_size)
+    mutated_individuals = mutate_subset(subset_S, mutate_function,
+                                        number_of_individs_to_mutate=subset_size,
+                                        offspring_from_each_individ=offspring_from_each_indivual)
+    give_fittness(mutated_individuals, number_of_trials)
     mutated_individuals.sort(key=itemgetter('fitness'), reverse=True)
     elite_set = mutated_individuals[:number_of_elites]
+
+    for rank, individ in enumerate(population):
+        print("rank: {}  Fitness: {}  Age: {} ".format(str(rank), str(individ['fitness']), str(individ['age'])))
+        individ['age'] += 1
+        highest_fitness_each_generation.append(population[0]['fitness'])
+
     for g in range(number_of_generations):
-        subset_S = sample(population, subset_size)
-        mutated_individuals = mutate_subset(subset_S, mutate_function, number_of_individs_to_mutate=1,offspring_from_each_individ=generation_replacment)
-        give_fittness(mutated_individuals)
+        subset_S = choices(population, k=subset_size)
+        mutated_individuals = mutate_subset(subset_S, mutate_function,
+                                            number_of_individs_to_mutate=number_of_individs_to_mutate,
+                                            offspring_from_each_individ=offspring_from_each_indivual)
+        give_fittness(mutated_individuals, number_of_trials)
 
-        elite_set_canditates = elite_set + mutated_individuals
-        elite_set_canditates.sort(key=itemgetter('fitness'), reverse=True)
+        mutated_individuals.sort(key=itemgetter('fitness'), reverse=True)
 
-        elite_set_canditates = elite_set_canditates[:9]
+        elite_set_canditates = elite_set + mutated_individuals[:number_of_elites]
 
-        give_fittness(elite_set_canditates,number_off_trials=30)
+        give_fittness(elite_set_canditates, number_off_trials=30)
         elite_set_canditates.sort(key=itemgetter('fitness'), reverse=True)
 
         elite_set = elite_set_canditates[:number_of_elites]
 
-        population = elite_set + (population - elite_set)
+        population_without_elite = []
+        for individ in mutated_individuals:
+            if individ not in elite_set:
+                population_without_elite.append(individ)
+
+        print('-------------------------')
+        print('mutated_individuals length: {}'.format(len(mutated_individuals)))
+        print('population_without_elite length: {}'.format(len(population_without_elite)))
+        population = elite_set + population_without_elite
 
         population.sort(key=itemgetter('fitness'), reverse=True)
         print('Generation ' + str(g))
@@ -194,17 +222,24 @@ FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley Jef
             individ['age'] += 1
             highest_fitness_each_generation.append(population[0]['fitness'])
 
+        if g%10 == 0 :
+            with open(best_individual_file_name, 'wb') as f:
+                pickle.dump(population[0],f)
+
+    print(highest_fitness_each_generation)
+    with open('highest_fintess', 'w') as f:
+        f.write(highest_fitness_each_generation)
+
+    get_individual_fitness(population[0],number_of_trials,render=True)
+
 
 if __name__ == '__main__':
     population_size = 30
     subset_size = 10
     replacement_per_generation = 4
-    generations = 90
+    generations = 60
     initial_population = create_initial_population(population_size)
     # simpleGA_A(initial_population, population_size, subset_size, mutate_funciton_individ, generations, replacement_per_generation)
     # simpleGA_B(initial_population, population_size, subset_size, mutate_funciton_individ, generations, replacement_per_generation)
 
-
-
-    simpleGA_C(initial_population, population_size, 1, mutate_funciton_individ, generations, replacement_per_generation, number_of_elites= 10)
-
+    simpleGA_C(initial_population, population_size, mutate_funciton_individ, generations)

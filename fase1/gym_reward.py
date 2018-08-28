@@ -1,5 +1,5 @@
 import gym
-import copy
+import os
 import torch
 import numpy as np
 from torch.autograd import Variable
@@ -17,7 +17,6 @@ def get_reward(state_dict, render=False):
     # cloned_model.nettverk.load_state_dict(state_dict)
     model.nettverk.load_state_dict(state_dict)
 
-
     # env._max_episode_steps=500
     observations = env.reset()
     done = False
@@ -27,8 +26,15 @@ def get_reward(state_dict, render=False):
             env.render()
             # time.sleep(0.05)
         observation_batch = torch.from_numpy(observations[np.newaxis,...]).float()
-        prediction = model(Variable(observation_batch))
+        # print(observation_batch[0])
+        # print('observation_batch')
+        # print(observation_batch)
+        observation_batch=observation_batch[0]
+        prediction = model.forward(Variable(observation_batch))
+        # print(prediction)
         action = prediction.data.numpy() #note. dont to argmax(). we are looking for force on all the join, not just one
+        # print(action)
+        # print('------------------------------------------')
         observations, reward, done, _ = env.step(action)
 
         total_reward += reward
@@ -37,3 +43,36 @@ def get_reward(state_dict, render=False):
     return total_reward
 
 
+
+def load_new_model_state(state_dict):
+    model.nettverk.load_state_dict(state_dict)
+    return model
+
+
+
+def save_checkpoint( generation, checkpoint_file):
+    torch.save({
+        'generation': generation + 1,
+        'state_dict': model.state_dict(),
+    }, checkpoint_file)
+    print('saved checkpoint')
+
+def resume_from_checkpoint(resume_file):
+    resume = False
+    if resume:
+        if os.path.isfile(resume_file):
+            print("=> loading checkpoint '{}'".format(resume_file))
+            checkpoint = torch.load(resume_file)
+            start_epoch = checkpoint['epoch']
+            model.load_state_dict(checkpoint['state_dict'])
+            print("=> loaded checkpoint '{}' (epoch {})"
+                  .format(resume_file, checkpoint['epoch']))
+
+            #run_training(0.1, start_epoch)
+
+        else:
+            print("=> no checkpoint found at '{}'".format(resume_file))
+
+    else:
+        #run_training(learning_rate)
+        pass
