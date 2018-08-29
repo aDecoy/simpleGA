@@ -10,6 +10,11 @@ from pytorch_model import NN_model
 model= NN_model()
 env = gym.make("Ant-v2")
 # env = gym.make("Humanoid-v2")
+print(env.action_space.high)
+print(env.action_space.low)
+print(env.observation_space.high)
+print(env.observation_space.low)
+# env = gym.make("Humanoid-v2")
 
 def get_reward(state_dict, render=False):
     # cloned_model = copy.deepcopy(model)
@@ -29,7 +34,7 @@ def get_reward(state_dict, render=False):
         # print(observation_batch[0])
         # print('observation_batch')
         # print(observation_batch)
-        observation_batch=observation_batch[0]
+        # observation_batch=observation_batch[0]
         prediction = model.forward(Variable(observation_batch))
         # print(prediction)
         action = prediction.data.numpy() #note. dont to argmax(). we are looking for force on all the join, not just one

@@ -184,6 +184,13 @@ FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley Jef
     mutated_individuals.sort(key=itemgetter('fitness'), reverse=True)
     elite_set = mutated_individuals[:number_of_elites]
 
+    population_without_elite = []
+    for individ in mutated_individuals:
+        if individ not in elite_set:
+            population_without_elite.append(individ)
+    population = elite_set + population_without_elite
+
+
     for rank, individ in enumerate(population):
         print("rank: {}  Fitness: {}  Age: {} ".format(str(rank), str(individ['fitness']), str(individ['age'])))
         individ['age'] += 1
@@ -200,7 +207,7 @@ FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley Jef
 
         elite_set_canditates = elite_set + mutated_individuals[:number_of_elites]
 
-        give_fittness(elite_set_canditates, number_off_trials=30)
+        give_fittness(elite_set_canditates, number_off_trials=20)
         elite_set_canditates.sort(key=itemgetter('fitness'), reverse=True)
 
         elite_set = elite_set_canditates[:number_of_elites]
@@ -222,9 +229,10 @@ FelipePetroskiSuch VashishtMadhavan EdoardoConti JoelLehman KennethO.Stanley Jef
             individ['age'] += 1
             highest_fitness_each_generation.append(population[0]['fitness'])
 
-        if g%10 == 0 :
+        if g%5 == 0 :
             with open(best_individual_file_name, 'wb') as f:
                 pickle.dump(population[0],f)
+                print('Saved best individual')
 
     print(highest_fitness_each_generation)
     with open('highest_fintess', 'w') as f:
@@ -242,4 +250,4 @@ if __name__ == '__main__':
     # simpleGA_A(initial_population, population_size, subset_size, mutate_funciton_individ, generations, replacement_per_generation)
     # simpleGA_B(initial_population, population_size, subset_size, mutate_funciton_individ, generations, replacement_per_generation)
 
-    simpleGA_C(initial_population, population_size, mutate_funciton_individ, generations)
+    simpleGA_C(initial_population, population_size, mutate_funciton_individ, generations,number_of_trials=8)
